@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Animations with Storage</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            transition: background-color 0.5s ease;
+        }
+
+        /* Button with Animation */
+        .action-btn {
+            padding: 12px 24px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            margin: 1rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+            background-color: #3367d6;
+        }
+
+        /* Animation Classes */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .animated-box {
+            width: 150px;
+            height: 150px;
+            background-color: #34a853;
+            margin: 2rem;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        .spin {
+            animation: spin 2s linear infinite;
+        }
+
+        /* Preferences Panel */
+        .preferences {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: #f1f1f1;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        /* Theme Options */
+        .theme-options {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .theme-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .theme-option.selected {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <h1 class="fade-in">Interactive Animations</h1>
+    
+    <div class="theme-options">
+        <div class="theme-option selected" data-theme="default" style="background-color: #f5f5f5;"></div>
+        <div class="theme-option" data-theme="dark" style="background-color: #333;"></div>
+        <div class="theme-option" data-theme="blue" style="background-color: #e3f2fd;"></div>
+    </div>
+    
+    <button id="animateBtn" class="action-btn fade-in">Trigger Animation</button>
+    <button id="changeColorBtn" class="action-btn fade-in">Change Box Color</button>
+    
+    <div id="animationTarget" class="animated-box">
+        Click a Button
+    </div>
+    
+    <div class="preferences fade-in">
+        <h3>Your Preferences</h3>
+        <div id="preferencesDisplay"></div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const animateBtn = document.getElementById('animateBtn');
+        const changeColorBtn = document.getElementById('changeColorBtn');
+        const animationTarget = document.getElementById('animationTarget');
+        const themeOptions = document.querySelectorAll('.theme-option');
+        const preferencesDisplay = document.getElementById('preferencesDisplay');
+        
+        // Available colors for the box
+        const boxColors = ['#34a853', '#ea4335', '#4285f4', '#fbbc05', '#673ab7'];
+        let currentColorIndex = 0;
+        
+        // Load saved preferences when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load theme preference
+            const savedTheme = localStorage.getItem('themePreference') || 'default';
+            setTheme(savedTheme);
+            updateThemeSelection(savedTheme);
+            
+            // Load box color preference
+            const savedColor = localStorage.getItem('boxColor');
+            if (savedColor) {
+                animationTarget.style.backgroundColor = savedColor;
+                currentColorIndex = boxColors.indexOf(savedColor);
+            }
+            
+            // Load animation history
+            updatePreferencesDisplay();
+        });
+        
+        // Theme Switching
+        themeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const theme = option.dataset.theme;
+                setTheme(theme);
+                localStorage.setItem('themePreference', theme);
+                updateThemeSelection(theme);
+                saveInteraction('Theme changed to ' + theme);
+                updatePreferencesDisplay();
+            });
+        });
+        
+        // Animation Button
+        animateBtn.addEventListener('click', () => {
+            // Toggle between animations
+            if (animationTarget.classList.contains('pulse')) {
+                animationTarget.classList.remove('pulse');
+                animationTarget.classList.add('spin');
+                animationTarget.textContent = 'Spinning!';
+                saveInteraction('Changed to spin animation');
+            } else if (animationTarget.classList.contains('spin')) {
+                animationTarget.classList.remove('spin');
+                animationTarget.textContent = 'Animation Stopped';
+                saveInteraction('Stopped animation');
+            } else {
+                animationTarget.classList.add('pulse');
+                animationTarget.textContent = 'Pulsing!';
+                saveInteraction('Started pulse animation');
+            }
+            
+            // Save the current animation state
+            const animationState = animationTarget.classList.contains('pulse') ? 'pulse' : 
+                                 animationTarget.classList.contains('spin') ? 'spin' : 'none';
+            localStorage.setItem('currentAnimation', animationState);
+            
+            updatePreferencesDisplay();
+        });
+        
+        // Change Color Button
+        changeColorBtn.addEventListener('click', () => {
+            currentColorIndex = (currentColorIndex + 1) % boxColors.length;
+            const newColor = boxColors[currentColorIndex];
+            animationTarget.style.backgroundColor = newColor;
+            animationTarget.style.transition = 'background-color 0.5s ease';
+            
+            // Save color preference
+            localStorage.setItem('boxColor', newColor);
+            saveInteraction('Changed box color to ' + newColor);
+            updatePreferencesDisplay();
+        });
+        
+        // Helper Functions
+        function setTheme(theme) {
+            document.body.className = theme;
+        }
+        
+        function updateThemeSelection(selectedTheme) {
+            themeOptions.forEach(option => {
+                option.classList.toggle('selected', option.dataset.theme === selectedTheme);
+            });
+        }
+        
+        function saveInteraction(action) {
+            const now = new Date();
+            localStorage.setItem('lastInteraction', now.toISOString());
+            localStorage.setItem('lastAction', action);
+        }
+        
+        function updatePreferencesDisplay() {
+            const savedTheme = localStorage.getItem('themePreference') || 'default';
+            const savedColor = localStorage.getItem('boxColor') || '#34a853';
+            const lastAction = localStorage.getItem('lastAction') || 'No actions yet';
+            const lastInteraction = localStorage.getItem('lastInteraction') 
+                ? new Date(localStorage.getItem('lastInteraction')).toLocaleString() 
+                : 'No interactions yet';
+            const currentAnimation = localStorage.getItem('currentAnimation') || 'none';
+            
+            preferencesDisplay.innerHTML = `
+                <p><strong>Current Theme:</strong> ${savedTheme}</p>
+                <p><strong>Box Color:</strong> ${savedColor}</p>
+                <p><strong>Current Animation:</strong> ${currentAnimation}</p>
+                <p><strong>Last Action:</strong> ${lastAction}</p>
+                <p><strong>Last Interaction:</strong> ${lastInteraction}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
